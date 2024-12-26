@@ -1,3 +1,4 @@
+from copy import deepcopy
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -5,12 +6,27 @@ import torch
 import torch.nn.functional as F
 # from torch.backends import cudnn
 
+from thop import profile
+
 from fast_reid.fastreid.config import get_cfg
 from fast_reid.fastreid.modeling.meta_arch import build_model
 from fast_reid.fastreid.utils.checkpoint import Checkpointer
 from fast_reid.fastreid.engine import DefaultTrainer, default_argument_parser, default_setup, launch
 
 # cudnn.benchmark = True
+
+
+def get_model_info(model, tsize):
+
+    stride = 64
+    img = torch.zeros((1, 3, stride, stride), device=next(model.parameters()).device)
+    flops, params = profile(deepcopy(model), inputs=(img,), verbose=False)
+    params /= 1e6
+    flops /= 1e9
+    flops *= tsize[0] * tsize[1] / stride / stride * 2  # Gflops
+    info = "Params: {:.2f}M, Gflops: {:.2f}".format(params, flops)
+    # info = "Params: {:f}M, Gflops: {:f}".format(params, flops)
+    return info
 
 
 def setup_cfg(config_file, opts):
@@ -64,14 +80,15 @@ class FastReIDInterface:
         self.model = build_model(self.cfg)
         self.model.eval()
 
+        self.pH, self.pW = self.cfg.INPUT.SIZE_TEST
+
         Checkpointer(self.model).load(weights_path)
+        self.model_info = get_model_info(self.model.to(self.device), tsize=(self.pW, self.pH))
 
         if self.device != 'cpu':
             self.model = self.model.eval().to(device='cuda').half()
         else:
             self.model = self.model.eval()
-
-        self.pH, self.pW = self.cfg.INPUT.SIZE_TEST
 
     def inference(self, image, detections):
 
