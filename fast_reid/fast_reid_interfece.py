@@ -20,9 +20,9 @@ def get_model_info(model, tsize):
 
     img = torch.zeros((1, 3, tsize[0], tsize[1]), device=next(model.parameters()).device)
     macs, params = profile(deepcopy(model), inputs=(img,), verbose=False)
-    params /= 1e6  # Number of parameters
-    macs /= 1e9   # MACs (Multiply-ACCumulate) operations
-    flops = macs * 2  # Gflops Giga FLOPs (Floating Point OPerations)
+    params /= 1e6  # Number of parameters (in millions)
+    macs /= 1e9   # MACs (Multiply-ACcumulate operations)
+    flops = macs * 2  # Gflops - Giga FLOPs (Floating Point OPerations). Each MAC counts as two FLOPs.
     # info = "Params: {:f}M, Gflops: {:f}, Gmacs: {:.f}".format(params, flops, macs)
     info = "Params: {:.4f}M, Gflops: {:.4f}, Gmacs: {:.4f}".format(params, flops, macs)
     return info
