@@ -394,9 +394,6 @@ class FusionSORT(object):
         if self.args.with_confidence:
             confidence_dists = matching.confidence_distance(strack_pool, detections)
 
-        if self.frame_id == 10:
-            pass
-
         if not self.args.mot20:
             if self.args.fusion_method != 'kf_gating':
                 ious_dists = matching.fuse_score(ious_dists, detections)

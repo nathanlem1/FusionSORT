@@ -28,7 +28,7 @@ timer = Timer()
 def make_parser():
     parser = argparse.ArgumentParser(description='Tracking pipeline for FusionSORT Tracker.')
 
-    parser.add_argument("--path", default='../datasets/MOT17', type=str,
+    parser.add_argument("--path", default='./datasets/MOT17', type=str,
                         help="path to dataset under evaluation, currently only support MOT17, MOT20 and DanceTrack.")
     parser.add_argument('--output_dir', type=str, default='./results/trackers',
                         help='Path to base tracking result folder to be saved to.')
@@ -41,7 +41,7 @@ def make_parser():
     parser.add_argument("-expn", "--experiment-name", type=str, default='FSORT1',
                         help='The name of the experiment, used for running different experiments and then evaluations, '
                              'e.g. RSORT1, RSORT2, etc.')
-    parser.add_argument("--default-parameters", dest="default_parameters", default=True, action="store_true",
+    parser.add_argument("--default-parameters", dest="default_parameters", default=False, action="store_true",
                         help="use the default parameters as in the paper")
     parser.add_argument("--save-frames", dest="save_frames", default=False, action="store_true",
                         help="save sequences with tracks.")
@@ -51,9 +51,9 @@ def make_parser():
     parser.add_argument("--conf", default=None, type=float, help="test conf")
     parser.add_argument("--nms", default=None, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=None, type=int, help="test img size")
-    parser.add_argument("--fp16", dest="fp16", default=True, action="store_true",
+    parser.add_argument("--fp16", dest="fp16", default=False, action="store_true",
                         help="Adopting mix precision evaluation.")
-    parser.add_argument("--fuse", dest="fuse", default=True, action="store_true", help="Fuse conv and bn for testing.")
+    parser.add_argument("--fuse", dest="fuse", default=False, action="store_true", help="Fuse conv and bn for testing.")
 
     # tracking args
     parser.add_argument("--track_high_thresh", type=float, default=0.6,
@@ -72,7 +72,7 @@ def make_parser():
                         help="cmc method: file | sparseOptFlow | orb | sift | ecc | none")
 
     # Appearance, ReId and weak cues
-    parser.add_argument("--with-appearance", dest="with_appearance", default=True, action="store_true",
+    parser.add_argument("--with-appearance", dest="with_appearance", default=False, action="store_true",
                         help="For using appearance representation features.")
     parser.add_argument("--fast-reid-config", dest="fast_reid_config", default=None, type=str,
                         help="reid config file path")
