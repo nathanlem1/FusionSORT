@@ -1,5 +1,5 @@
 # FusionSORT
-This code implements the paper [FusionSORT: Fusion Methods for Online Multi-object Visual Tracking]().
+This code implements the paper [FusionSORT: Fusion Methods for Online Multi-object Visual Tracking](https://arxiv.org/abs/2501.00843).
 
 ## Abstract
 In this work, we investigate four different fusion methods for associating detections to tracklets in multi-object 
@@ -136,7 +136,15 @@ Please note the output folder name `FSORT1`.
 ## Citation
 If you find this work useful, please consider citing our paper:
 ```
-Todo:
+@misc{baisa2025fusionsortfusionmethodsonline,
+      title={FusionSORT: Fusion Methods for Online Multi-object Visual Tracking}, 
+      author={Nathanael L. Baisa},
+      year={2025},
+      eprint={2501.00843},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2501.00843}, 
+}
 ```
 
 
