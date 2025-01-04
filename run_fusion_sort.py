@@ -204,7 +204,7 @@ def image_track(predictor, vis_folder, args):
     num_frames = len(files)
 
     # Tracker
-    tracker = FusionSORT(args, frame_rate=args.fps, num_frames=num_frames)
+    tracker = FusionSORT(args, frame_rate=args.fps)
 
     results = []
 

@@ -282,7 +282,7 @@ class STrack(BaseTrack):
 
 
 class FusionSORT(object):
-    def __init__(self, args, frame_rate=30, num_frames=500):
+    def __init__(self, args, frame_rate=30):
 
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
