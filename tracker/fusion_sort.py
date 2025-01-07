@@ -306,7 +306,7 @@ class FusionSORT(object):
         self.appearance_thresh = args.appearance_thresh
 
         if args.with_appearance:
-            self.encoder = FastReIDInterface(args.fast_reid_config, args.fast_reid_weights, args.device)
+            self.encoder = FastReIDInterface(args.fast_reid_config, args.fast_reid_weights, args.device, 50)
             logger.info("ReID Model Summary: {}".format(self.encoder.model_info))
 
         self.cmc = CMC(benchmark=args.benchmark, method=args.cmc_method, verbose=[args.name, args.ablation])
@@ -350,6 +350,7 @@ class FusionSORT(object):
 
         '''Extract embeddings '''
         if self.args.with_appearance:
+            # If this fails due to memory issue, you need to reduce the batch_size for feature extraction
             features_keep = self.encoder.inference(img, dets)
 
         if len(dets) > 0:
