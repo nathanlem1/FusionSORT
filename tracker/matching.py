@@ -377,11 +377,13 @@ def iou_distance(atracks, btracks, dist_type="iou"):
         _ious = bbox_overlaps_diou(atlbrs, btlbrs)
     elif dist_type == "ciou":
         _ious = bbox_overlaps_ciou(atlbrs, btlbrs)
-    else:
-        _ious = ious(atlbrs, btlbrs)   # iou similarity, using cython_bbox gives better result than using iou_batch.
+    elif dist_type == "iou":
+        _ious = ious(atlbrs, btlbrs)  # iou similarity, using cython_bbox gives better result than using iou_batch.
         # _ious = iou_batch(atlbrs, btlbrs)
-    cost_matrix = 1 - _ious
+    else:
+        raise ValueError('Set to correct IoU distance type: giou, diou, ciou or iou.')
 
+    cost_matrix = 1 - _ious
     return cost_matrix
 
 
