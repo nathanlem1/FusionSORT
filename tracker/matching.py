@@ -66,22 +66,25 @@ def ious(atlbrs, btlbrs):
     return ious
 
 
-def iou_batch(bboxes_1, bboxes_2):
+def iou_batch(bboxes1, bboxes2):
     """
     From SORT: Computes IoU between two bboxes in the form [x1,y1,x2,y2]
     """
-    bboxes_2 = np.expand_dims(bboxes_2, 0)
-    bboxes_1 = np.expand_dims(bboxes_1, 1)
+    _ious = np.zeros((len(bboxes1), len(bboxes2)), dtype=float)
+    if _ious.size == 0:
+        return _ious
+    bboxes2 = np.expand_dims(bboxes2, 0)
+    bboxes1 = np.expand_dims(bboxes1, 1)
 
-    xx1 = np.maximum(bboxes_1[..., 0], bboxes_2[..., 0])
-    yy1 = np.maximum(bboxes_1[..., 1], bboxes_2[..., 1])
-    xx2 = np.minimum(bboxes_1[..., 2], bboxes_2[..., 2])
-    yy2 = np.minimum(bboxes_1[..., 3], bboxes_2[..., 3])
+    xx1 = np.maximum(bboxes1[..., 0], bboxes2[..., 0])
+    yy1 = np.maximum(bboxes1[..., 1], bboxes2[..., 1])
+    xx2 = np.minimum(bboxes1[..., 2], bboxes2[..., 2])
+    yy2 = np.minimum(bboxes1[..., 3], bboxes2[..., 3])
     w = np.maximum(0., xx2 - xx1)
     h = np.maximum(0., yy2 - yy1)
     wh = w * h
-    _ious = wh / ((bboxes_1[..., 2] - bboxes_1[..., 0]) * (bboxes_1[..., 3] - bboxes_1[..., 1]) +
-                  (bboxes_2[..., 2] - bboxes_2[..., 0]) * (bboxes_2[..., 3] - bboxes_2[..., 1]) - wh)
+    _ious = wh / ((bboxes1[..., 2] - bboxes1[..., 0]) * (bboxes1[..., 3] - bboxes1[..., 1]) +
+                  (bboxes2[..., 2] - bboxes2[..., 0]) * (bboxes2[..., 3] - bboxes2[..., 1]) - wh)
     return _ious
 
 
@@ -94,6 +97,9 @@ def giou_batch(bboxes1, bboxes2):
     # Generalized IoU (GIoU), for details should go to https://arxiv.org/pdf/1902.09630.pdf. It is also explained well
     # in https://publikationen.bibliothek.kit.edu/1000161972 in tracking context.
     # ensure predict's bbox form
+    giou = np.zeros((len(bboxes1), len(bboxes2)), dtype=float)
+    if giou.size == 0:
+        return giou
     bboxes2 = np.expand_dims(bboxes2, 0)
     bboxes1 = np.expand_dims(bboxes1, 1)
 
@@ -130,6 +136,9 @@ def diou_batch(bboxes1, bboxes2):
     # Distance IoU (DIoU), for details should go to https://arxiv.org/pdf/1911.08287. It is also explained well
     # in https://publikationen.bibliothek.kit.edu/1000161972 in tracking context.
     # ensure predict's bbox form
+    diou = np.zeros((len(bboxes1), len(bboxes2)), dtype=float)
+    if diou.size == 0:
+        return diou
     bboxes2 = np.expand_dims(bboxes2, 0)
     bboxes1 = np.expand_dims(bboxes1, 1)
 
@@ -171,6 +180,9 @@ def ciou_batch(bboxes1, bboxes2):
     # Complete IoU (DIoU), for details should go to https://arxiv.org/pdf/1911.08287. It is also explained well
     # in https://publikationen.bibliothek.kit.edu/1000161972 in tracking context.
     # ensure predict's bbox form
+    ciou = np.zeros((len(bboxes1), len(bboxes2)), dtype=float)
+    if ciou.size == 0:
+        return ciou
     bboxes2 = np.expand_dims(bboxes2, 0)
     bboxes1 = np.expand_dims(bboxes1, 1)
 
@@ -304,8 +316,38 @@ def iou_distance(atracks, btracks):
     else:
         atlbrs = [track.tlbr for track in atracks]
         btlbrs = [track.tlbr for track in btracks]
-    _ious = ious(atlbrs, btlbrs)  # iou similarity
+    _ious = ious(atlbrs, btlbrs)  # iou similarity, using cython_bbox (gives better result)
     cost_matrix = 1 - _ious  # cost
+
+    return cost_matrix
+
+
+def iou_distance2(atracks, btracks):
+    """
+    Compute cost based on IoU
+    :type atracks: list[STrack]
+    :type btracks: list[STrack]
+    :rtype cost_matrix np.ndarray
+    """
+    atlbrs = [track.tlbr for track in atracks]
+    btlbrs = [track.tlbr for track in btracks]
+    _ious = iou_batch(atlbrs, btlbrs)  # iou similarity, using iou_batch method
+    cost_matrix = 1 - _ious
+
+    return cost_matrix
+
+
+def diou_distance(atracks, btracks):
+    """
+    Compute cost based on Distance-IoU (DIoU)
+    :type atracks: list[STrack]
+    :type btracks: list[STrack]
+    :rtype cost_matrix np.ndarray
+    """
+    atlbrs = [track.tlbr for track in atracks]
+    btlbrs = [track.tlbr for track in btracks]
+    _dious = diou_batch(atlbrs, btlbrs)  # diou similarity
+    cost_matrix = 1 - _dious
 
     return cost_matrix
 
