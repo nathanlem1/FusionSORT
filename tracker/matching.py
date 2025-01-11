@@ -373,9 +373,9 @@ def iou_distance(atracks, btracks, dist_type="iou"):
         btlbrs = [track.tlbr for track in btracks]
     if dist_type == "giou":
         _ious = bbox_overlaps_giou(atlbrs, btlbrs)
-    if dist_type == "diou":
+    elif dist_type == "diou":
         _ious = bbox_overlaps_diou(atlbrs, btlbrs)
-    if dist_type == "ciou":
+    elif dist_type == "ciou":
         _ious = bbox_overlaps_ciou(atlbrs, btlbrs)
     else:
         _ious = ious(atlbrs, btlbrs)   # iou similarity, using cython_bbox gives better result than using iou_batch.
