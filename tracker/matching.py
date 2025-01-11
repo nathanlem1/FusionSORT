@@ -1,7 +1,10 @@
 import numpy as np
 import scipy
 import lap
+import math
 from scipy.spatial.distance import cdist
+
+import torch
 
 from cython_bbox import bbox_overlaps as bbox_ious
 from tracker import kalman_filter_score
@@ -88,7 +91,7 @@ def iou_batch(bboxes1, bboxes2):
     return _ious
 
 
-def giou_batch(bboxes1, bboxes2):
+def bbox_overlaps_giou(bboxes1, bboxes2):
     """
     :param bbox_p: predict of bbox(N,4)(x1,y1,x2,y2)
     :param bbox_g: groundtruth of bbox(N,4)(x1,y1,x2,y2)
@@ -97,37 +100,57 @@ def giou_batch(bboxes1, bboxes2):
     # Generalized IoU (GIoU), for details should go to https://arxiv.org/pdf/1902.09630.pdf. It is also explained well
     # in https://publikationen.bibliothek.kit.edu/1000161972 in tracking context.
     # ensure predict's bbox form
-    giou = np.zeros((len(bboxes1), len(bboxes2)), dtype=float)
-    if giou.size == 0:
-        return giou
-    bboxes2 = np.expand_dims(bboxes2, 0)
-    bboxes1 = np.expand_dims(bboxes1, 1)
+    giou = torch.zeros((len(bboxes1), len(bboxes2)), dtype=float)
+    if len(bboxes1) * len(bboxes2) == 0:
+        return giou.numpy()
 
-    xx1 = np.maximum(bboxes1[..., 0], bboxes2[..., 0])
-    yy1 = np.maximum(bboxes1[..., 1], bboxes2[..., 1])
-    xx2 = np.minimum(bboxes1[..., 2], bboxes2[..., 2])
-    yy2 = np.minimum(bboxes1[..., 3], bboxes2[..., 3])
-    w = np.maximum(0., xx2 - xx1)
-    h = np.maximum(0., yy2 - yy1)
-    wh = w * h
-    union = ((bboxes1[..., 2] - bboxes1[..., 0]) * (bboxes1[..., 3] - bboxes1[..., 1])
-             + (bboxes2[..., 2] - bboxes2[..., 0]) * (bboxes2[..., 3] - bboxes2[..., 1]) - wh)
-    iou = wh / union
+    bboxes1 = np.ascontiguousarray(bboxes1, dtype=float)
+    bboxes2 = np.ascontiguousarray(bboxes2, dtype=float)
 
-    xxc1 = np.minimum(bboxes1[..., 0], bboxes2[..., 0])
-    yyc1 = np.minimum(bboxes1[..., 1], bboxes2[..., 1])
-    xxc2 = np.maximum(bboxes1[..., 2], bboxes2[..., 2])
-    yyc2 = np.maximum(bboxes1[..., 3], bboxes2[..., 3])
-    wc = xxc2 - xxc1
-    hc = yyc2 - yyc1
-    assert ((wc > 0).all() and (hc > 0).all())
-    area_enclose = wc * hc
-    giou = iou - (area_enclose - union) / area_enclose
-    giou = (giou + 1.) / 2.0  # resize from (-1,1) to (0,1)
-    return giou
+    bboxes1 = torch.Tensor(bboxes1)
+    bboxes2 = torch.Tensor(bboxes2)
+
+    rows = bboxes1.shape[0]
+    cols = bboxes2.shape[0]
+    giou = torch.zeros((rows, cols))
+    exchange = False
+    if bboxes1.shape[0] > bboxes2.shape[0]:
+        bboxes1, bboxes2 = bboxes2, bboxes1
+        giou = torch.zeros((cols, rows))
+        exchange = True
+
+    bboxes1 = bboxes1[:, None, :]
+    bboxes2 = bboxes2[None, :, :]
+    w1 = bboxes1[..., 2] - bboxes1[..., 0]
+    h1 = bboxes1[..., 3] - bboxes1[..., 1]
+    w2 = bboxes2[..., 2] - bboxes2[..., 0]
+    h2 = bboxes2[..., 3] - bboxes2[..., 1]
+
+    area1 = w1 * h1
+    area2 = w2 * h2
+
+    inter_max_xy = torch.min(bboxes1[..., 2:], bboxes2[..., 2:])
+    inter_min_xy = torch.max(bboxes1[..., :2], bboxes2[..., :2])
+    out_max_xy = torch.max(bboxes1[..., 2:], bboxes2[..., 2:])
+    out_min_xy = torch.min(bboxes1[..., :2], bboxes2[..., :2])
+
+    inter = torch.clamp((inter_max_xy - inter_min_xy), min=0)
+    inter_area = inter[:, :, 0] * inter[:, :, 1]
+
+    outer = torch.clamp((out_max_xy - out_min_xy), min=0)
+    outer_area = outer[:, :, 0] * outer[:, :, 1]
+    union = area1 + area2 - inter_area
+
+    iou = inter_area / union
+
+    giou = iou - (outer_area - union) / outer_area
+    giou = torch.clamp(giou, min=-1.0, max=1.0)
+    if exchange:
+        giou = giou.T
+    return giou.numpy()
 
 
-def diou_batch(bboxes1, bboxes2):
+def bbox_overlaps_diou(bboxes1, bboxes2):
     """
     :param bbox_p: predict of bbox(N,4)(x1,y1,x2,y2)
     :param bbox_g: groundtruth of bbox(N,4)(x1,y1,x2,y2)
@@ -136,97 +159,128 @@ def diou_batch(bboxes1, bboxes2):
     # Distance IoU (DIoU), for details should go to https://arxiv.org/pdf/1911.08287. It is also explained well
     # in https://publikationen.bibliothek.kit.edu/1000161972 in tracking context.
     # ensure predict's bbox form
-    diou = np.zeros((len(bboxes1), len(bboxes2)), dtype=float)
-    if diou.size == 0:
-        return diou
-    bboxes2 = np.expand_dims(bboxes2, 0)
-    bboxes1 = np.expand_dims(bboxes1, 1)
+    dious = torch.zeros((len(bboxes1), len(bboxes2)), dtype=float)
+    if len(bboxes1) * len(bboxes2) == 0:
+        return dious.numpy()
 
-    # calculate the intersection box
-    xx1 = np.maximum(bboxes1[..., 0], bboxes2[..., 0])
-    yy1 = np.maximum(bboxes1[..., 1], bboxes2[..., 1])
-    xx2 = np.minimum(bboxes1[..., 2], bboxes2[..., 2])
-    yy2 = np.minimum(bboxes1[..., 3], bboxes2[..., 3])
-    w = np.maximum(0., xx2 - xx1)
-    h = np.maximum(0., yy2 - yy1)
-    wh = w * h
-    union = ((bboxes1[..., 2] - bboxes1[..., 0]) * (bboxes1[..., 3] - bboxes1[..., 1])
-             + (bboxes2[..., 2] - bboxes2[..., 0]) * (bboxes2[..., 3] - bboxes2[..., 1]) - wh)
-    iou = wh / union
-    centerx1 = (bboxes1[..., 0] + bboxes1[..., 2]) / 2.0
-    centery1 = (bboxes1[..., 1] + bboxes1[..., 3]) / 2.0
-    centerx2 = (bboxes2[..., 0] + bboxes2[..., 2]) / 2.0
-    centery2 = (bboxes2[..., 1] + bboxes2[..., 3]) / 2.0
+    bboxes1 = np.ascontiguousarray(bboxes1, dtype=float)
+    bboxes2 = np.ascontiguousarray(bboxes2, dtype=float)
 
-    inner_diag = (centerx1 - centerx2) ** 2 + (centery1 - centery2) ** 2
+    bboxes1 = torch.Tensor(bboxes1)
+    bboxes2 = torch.Tensor(bboxes2)
 
-    xxc1 = np.minimum(bboxes1[..., 0], bboxes2[..., 0])
-    yyc1 = np.minimum(bboxes1[..., 1], bboxes2[..., 1])
-    xxc2 = np.maximum(bboxes1[..., 2], bboxes2[..., 2])
-    yyc2 = np.maximum(bboxes1[..., 3], bboxes2[..., 3])
+    rows = bboxes1.shape[0]
+    cols = bboxes2.shape[0]
+    dious = torch.zeros((rows, cols))
+    exchange = False
+    if bboxes1.shape[0] > bboxes2.shape[0]:
+        bboxes1, bboxes2 = bboxes2, bboxes1
+        dious = torch.zeros((cols, rows))
+        exchange = True
 
-    outer_diag = (xxc2 - xxc1) ** 2 + (yyc2 - yyc1) ** 2
-    diou = iou - inner_diag / outer_diag
-
-    return (diou + 1) / 2.0  # resize from (-1,1) to (0,1)
-
-
-def ciou_batch(bboxes1, bboxes2):
-    """
-    :param bbox_p: predict of bbox(N,4)(x1,y1,x2,y2)
-    :param bbox_g: groundtruth of bbox(N,4)(x1,y1,x2,y2)
-    :return:
-    """
-    # Complete IoU (DIoU), for details should go to https://arxiv.org/pdf/1911.08287. It is also explained well
-    # in https://publikationen.bibliothek.kit.edu/1000161972 in tracking context.
-    # ensure predict's bbox form
-    ciou = np.zeros((len(bboxes1), len(bboxes2)), dtype=float)
-    if ciou.size == 0:
-        return ciou
-    bboxes2 = np.expand_dims(bboxes2, 0)
-    bboxes1 = np.expand_dims(bboxes1, 1)
-
-    # calculate the intersection box
-    xx1 = np.maximum(bboxes1[..., 0], bboxes2[..., 0])
-    yy1 = np.maximum(bboxes1[..., 1], bboxes2[..., 1])
-    xx2 = np.minimum(bboxes1[..., 2], bboxes2[..., 2])
-    yy2 = np.minimum(bboxes1[..., 3], bboxes2[..., 3])
-    w = np.maximum(0., xx2 - xx1)
-    h = np.maximum(0., yy2 - yy1)
-    wh = w * h
-    union = ((bboxes1[..., 2] - bboxes1[..., 0]) * (bboxes1[..., 3] - bboxes1[..., 1])
-             + (bboxes2[..., 2] - bboxes2[..., 0]) * (bboxes2[..., 3] - bboxes2[..., 1]) - wh)
-    iou = wh / union
-
-    centerx1 = (bboxes1[..., 0] + bboxes1[..., 2]) / 2.0
-    centery1 = (bboxes1[..., 1] + bboxes1[..., 3]) / 2.0
-    centerx2 = (bboxes2[..., 0] + bboxes2[..., 2]) / 2.0
-    centery2 = (bboxes2[..., 1] + bboxes2[..., 3]) / 2.0
-
-    inner_diag = (centerx1 - centerx2) ** 2 + (centery1 - centery2) ** 2
-
-    xxc1 = np.minimum(bboxes1[..., 0], bboxes2[..., 0])
-    yyc1 = np.minimum(bboxes1[..., 1], bboxes2[..., 1])
-    xxc2 = np.maximum(bboxes1[..., 2], bboxes2[..., 2])
-    yyc2 = np.maximum(bboxes1[..., 3], bboxes2[..., 3])
-
-    outer_diag = (xxc2 - xxc1) ** 2 + (yyc2 - yyc1) ** 2
-
+    bboxes1 = bboxes1[:, None, :]
+    bboxes2 = bboxes2[None, :, :]
     w1 = bboxes1[..., 2] - bboxes1[..., 0]
     h1 = bboxes1[..., 3] - bboxes1[..., 1]
     w2 = bboxes2[..., 2] - bboxes2[..., 0]
     h2 = bboxes2[..., 3] - bboxes2[..., 1]
 
-    # prevent dividing over zero. add one pixel shift
-    h2 = h2 + 1.
-    h1 = h1 + 1.
-    arctan = np.arctan(w2 / h2) - np.arctan(w1 / h1)
-    v = (4 / (np.pi ** 2)) * (arctan ** 2)
-    S = 1 - iou
-    alpha = v / (S + v)
-    ciou = iou - inner_diag / outer_diag - alpha * v
+    area1 = w1 * h1
+    area2 = w2 * h2
 
-    return (ciou + 1) / 2.0  # resize from (-1,1) to (0,1)
+    center_x1 = (bboxes1[..., 2] + bboxes1[..., 0]) / 2
+    center_y1 = (bboxes1[..., 3] + bboxes1[..., 1]) / 2
+    center_x2 = (bboxes2[..., 2] + bboxes2[..., 0]) / 2
+    center_y2 = (bboxes2[..., 3] + bboxes2[..., 1]) / 2
+
+    inter_max_xy = torch.min(bboxes1[..., 2:], bboxes2[..., 2:])
+    inter_min_xy = torch.max(bboxes1[..., :2], bboxes2[..., :2])
+    out_max_xy = torch.max(bboxes1[..., 2:], bboxes2[..., 2:])
+    out_min_xy = torch.min(bboxes1[..., :2], bboxes2[..., :2])
+
+    inter = torch.clamp((inter_max_xy - inter_min_xy), min=0)
+    inter_area = inter[:, :, 0] * inter[:, :, 1]
+    inter_diag = (center_x1 - center_x2) ** 2 + (center_y1 - center_y2) ** 2
+    outer = torch.clamp((out_max_xy - out_min_xy), min=0)
+    outer_diag = (outer[:, :, 0] ** 2) + (outer[:, :, 1] ** 2)
+    union = area1 + area2 - inter_area
+    u = (inter_diag) / outer_diag
+    iou = inter_area / union
+    dious = iou - u
+    dious = torch.clamp(dious, min=-1.0, max=1.0)
+    if exchange:
+        dious = dious.T
+    return dious.numpy()
+
+
+def bbox_overlaps_ciou(bboxes1, bboxes2):
+    """
+    :param bbox_p: predict of bbox(N,4)(x1,y1,x2,y2)
+    :param bbox_g: groundtruth of bbox(N,4)(x1,y1,x2,y2)
+    :return:
+    """
+    # Complete IoU (CIoU), for details should go to https://arxiv.org/pdf/1911.08287. It is also explained well
+    # in https://publikationen.bibliothek.kit.edu/1000161972 in tracking context.
+    # ensure predict's bbox form
+    cious = torch.zeros((len(bboxes1), len(bboxes2)), dtype=float)
+    if len(bboxes1) * len(bboxes2) == 0:
+        return cious.numpy()
+
+    bboxes1 = np.ascontiguousarray(bboxes1, dtype=float)
+    bboxes2 = np.ascontiguousarray(bboxes2, dtype=float)
+
+    bboxes1 = torch.Tensor(bboxes1)
+    bboxes2 = torch.Tensor(bboxes2)
+
+    rows = bboxes1.shape[0]
+    cols = bboxes2.shape[0]
+    cious = torch.zeros((rows, cols))
+    exchange = False
+    if bboxes1.shape[0] > bboxes2.shape[0]:
+        bboxes1, bboxes2 = bboxes2, bboxes1
+        cious = torch.zeros((cols, rows))
+        exchange = True
+
+    bboxes1 = bboxes1[:, None, :]
+    bboxes2 = bboxes2[None, :, :]
+    w1 = bboxes1[..., 2] - bboxes1[..., 0]
+    h1 = bboxes1[..., 3] - bboxes1[..., 1]
+    w2 = bboxes2[..., 2] - bboxes2[..., 0]
+    h2 = bboxes2[..., 3] - bboxes2[..., 1]
+
+    area1 = w1 * h1
+    area2 = w2 * h2
+
+    center_x1 = (bboxes1[..., 2] + bboxes1[..., 0]) / 2
+    center_y1 = (bboxes1[..., 3] + bboxes1[..., 1]) / 2
+    center_x2 = (bboxes2[..., 2] + bboxes2[..., 0]) / 2
+    center_y2 = (bboxes2[..., 3] + bboxes2[..., 1]) / 2
+
+    inter_max_xy = torch.min(bboxes1[..., 2:], bboxes2[..., 2:])
+    inter_min_xy = torch.max(bboxes1[..., :2], bboxes2[..., :2])
+    out_max_xy = torch.max(bboxes1[..., 2:], bboxes2[..., 2:])
+    out_min_xy = torch.min(bboxes1[..., :2], bboxes2[..., :2])
+
+    inter = torch.clamp((inter_max_xy - inter_min_xy), min=0)
+    inter_area = inter[:, :, 0] * inter[:, :, 1]
+    inter_diag = (center_x1 - center_x2) ** 2 + (center_y1 - center_y2) ** 2
+    outer = torch.clamp((out_max_xy - out_min_xy), min=0)
+    outer_diag = (outer[:, :, 0] ** 2) + (outer[:, :, 1] ** 2)
+    union = area1 + area2 - inter_area
+    u = (inter_diag) / outer_diag
+    iou = inter_area / union
+    with torch.no_grad():
+        arctan = torch.atan(w2 / h2) - torch.atan(w1 / h1)
+        v = (4 / (math.pi ** 2)) * torch.pow((torch.atan(w2 / h2) - torch.atan(w1 / h1)), 2)
+        S = 1 - iou
+        alpha = v / (S + v)
+        w_temp = 2 * w1
+    ar = (8 / (math.pi ** 2)) * arctan * ((w1 - w_temp) * h1)
+    cious = iou - (u + alpha * ar)
+    cious = torch.clamp(cious, min=-1.0, max=1.0)
+    if exchange:
+        cious = cious.T
+    return cious.numpy()
 
 
 def hmiou(atlbrs, btlbrs):
@@ -301,53 +355,32 @@ def tlbr_expand(tlbr, scale=1.2):
     return tlbr
 
 
-def iou_distance(atracks, btracks):
+def iou_distance(atracks, btracks, dist_type="iou"):
     """
     Compute cost based on IoU
     :type atracks: list[STrack]
     :type btracks: list[STrack]
+    :type dist_type: str
 
     :rtype cost_matrix np.ndarray
     """
 
-    if (len(atracks)>0 and isinstance(atracks[0], np.ndarray)) or (len(btracks) > 0 and isinstance(btracks[0], np.ndarray)):
+    if (len(atracks) > 0 and isinstance(atracks[0], np.ndarray)) or (len(btracks) > 0 and isinstance(btracks[0], np.ndarray)):
         atlbrs = atracks
         btlbrs = btracks
     else:
         atlbrs = [track.tlbr for track in atracks]
         btlbrs = [track.tlbr for track in btracks]
-    _ious = ious(atlbrs, btlbrs)  # iou similarity, using cython_bbox (gives better result)
-    cost_matrix = 1 - _ious  # cost
-
-    return cost_matrix
-
-
-def iou_distance2(atracks, btracks):
-    """
-    Compute cost based on IoU
-    :type atracks: list[STrack]
-    :type btracks: list[STrack]
-    :rtype cost_matrix np.ndarray
-    """
-    atlbrs = [track.tlbr for track in atracks]
-    btlbrs = [track.tlbr for track in btracks]
-    _ious = iou_batch(atlbrs, btlbrs)  # iou similarity, using iou_batch method
+    if dist_type == "giou":
+        _ious = bbox_overlaps_giou(atlbrs, btlbrs)
+    if dist_type == "diou":
+        _ious = bbox_overlaps_diou(atlbrs, btlbrs)
+    if dist_type == "ciou":
+        _ious = bbox_overlaps_ciou(atlbrs, btlbrs)
+    else:
+        _ious = ious(atlbrs, btlbrs)   # iou similarity, using cython_bbox gives better result than using iou_batch.
+        # _ious = iou_batch(atlbrs, btlbrs)
     cost_matrix = 1 - _ious
-
-    return cost_matrix
-
-
-def diou_distance(atracks, btracks):
-    """
-    Compute cost based on Distance-IoU (DIoU)
-    :type atracks: list[STrack]
-    :type btracks: list[STrack]
-    :rtype cost_matrix np.ndarray
-    """
-    atlbrs = [track.tlbr for track in atracks]
-    btlbrs = [track.tlbr for track in btracks]
-    _dious = diou_batch(atlbrs, btlbrs)  # diou similarity
-    cost_matrix = 1 - _dious
 
     return cost_matrix
 
