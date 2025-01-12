@@ -55,9 +55,9 @@ class STrack(BaseTrack):
     def predict(self):
         mean_state = self.mean.copy()
         if self.state != TrackState.Tracked:
-            mean_state[6] = 0
-            mean_state[7] = 0
-
+            mean_state[7] = 0  # Set the derivative of w to zero (width preservation)
+            mean_state[8] = 0  # Set the derivative of h to zero (height preservation)
+            mean_state[9] = 0  # Set the derivative of c to zero (confidence preservation)
         self.mean, self.covariance = self.kalman_filter.predict(mean_state, self.covariance)
 
     @staticmethod
@@ -67,9 +67,9 @@ class STrack(BaseTrack):
             multi_covariance = np.asarray([st.covariance for st in stracks])
             for i, st in enumerate(stracks):
                 if st.state != TrackState.Tracked:
-                    multi_mean[i][7] = 0
-                    multi_mean[i][8] = 0
-                    multi_mean[i][9] = 0
+                    multi_mean[i][7] = 0  # Set the derivative of w to zero (width preservation)
+                    multi_mean[i][8] = 0  # Set the derivative of h to zero (height preservation)
+                    multi_mean[i][0] = 0  # Set the derivative of c to zero (confidence preservation)
             multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
             for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
                 stracks[i].mean = mean
@@ -150,9 +150,12 @@ class STrack(BaseTrack):
 
     def re_activate(self, new_track, frame_id, new_id=False):
 
-        self.score = new_track.score
+        new_score = new_track.score
+
         self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_track.tlwh, new_track.score))  # NSA doesn't help!
+            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_track.tlwh, new_score))
+        # self.mean, self.covariance = self.kalman_filter.update(
+        #     self.mean, self.covariance, self.tlwh_score_to_xywhs(new_track.tlwh, new_track.score), new_score)  # NSA doesn't help!
 
         # EMA with dynamic or changing alpha
         trust = (new_track.score - self.track_high_thresh) / (1 - self.track_high_thresh)
@@ -169,6 +172,8 @@ class STrack(BaseTrack):
         if new_id:
             self.track_id = self.next_id()
 
+        self.score = new_track.score
+
     def update(self, new_track, frame_id):
         """
         Update a matched track
@@ -184,7 +189,9 @@ class STrack(BaseTrack):
         new_score = new_track.score
 
         self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score))  # NSA doesn't help!
+            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score))
+        # self.mean, self.covariance = self.kalman_filter.update(
+        #     self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score), new_score)  # NSA doesn't help!
 
         # EMA with dynamic or changing alpha
         trust = (new_track.score - self.track_high_thresh) / (1 - self.track_high_thresh)
@@ -397,7 +404,7 @@ class FusionSORT(object):
 
         if not self.args.mot20:
             if self.args.fusion_method != 'kf_gating':
-                ious_dists = matching.fuse_score(ious_dists, detections)
+                ious_dists = matching.fuse_score(ious_dists, detections)  # Fusing IoU with detection score
 
         if self.args.fusion_method == 'minimum':
             if self.args.with_appearance:
