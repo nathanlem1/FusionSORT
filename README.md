@@ -77,6 +77,8 @@ Note that we use MOT17 test detector model as the validation model for MOT20 dat
 ## Tracking 
 * **Evaluation on validation set**
 
+To evaluate on MOT17 val dataset, you need to run:
+
 ```shell
 # Using motion only
 python run_fusion_sort.py --path ./datasets/MOT17 --default-parameters --benchmark MOT17 --eval val --experiment-name FSORT1 --fp16 --fuse
@@ -93,6 +95,8 @@ validation sets as the DanceTrack dataset, which has a separate validation set. 
 minimum, weighted_sum, kf_gating or hadamard.
 
 * **Evaluation on test set**
+
+To evaluate on MOT17 test dataset, you need to run:
 
 ```shell
 # Using motion only
