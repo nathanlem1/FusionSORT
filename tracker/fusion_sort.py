@@ -109,7 +109,7 @@ class STrack(BaseTrack):
 
         # Do ReId here
         removed_stracks = list(dict.fromkeys(removed_stracks))  # Remove duplicate removed (archived) tracks
-        if args.use_reid:
+        if args.use_reid and args.with_appearance:
             matches = []
             tracks_del = []
             for track in removed_stracks:
