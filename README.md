@@ -123,7 +123,7 @@ You can also use Gaussian-smoothed interpolation (GSI) as in [StrongSORT](https:
 ## Evaluation
 
 You can use the official MOTChallenge evaluation code from [TrackEval](https://github.com/JonathonLuiten/TrackEval) 
-to evaluate the MOT17, MOT20  and DanceTrack `train` or `val` datasets. For our experimental analysis, we use `val` 
+to evaluate the MOT17, MOT20  and DanceTrack `train` or `val` datasets. For our experimental analysis, we use `val`. 
 To evaluate on `val` datasets, you need to use `val` for `--SPLIT_TO_EVAL`. Hence, to evaluate on MOT17, MOT20 or 
 DanceTrack datasets, you can run the following code on terminal:
 
