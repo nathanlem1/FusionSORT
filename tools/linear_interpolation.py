@@ -1,3 +1,4 @@
+""" For more details about this linear interpolation (LI), please refer to https://arxiv.org/abs/2110.06864"""
 import sys
 import argparse
 import numpy as np

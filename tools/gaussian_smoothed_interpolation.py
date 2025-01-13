@@ -4,6 +4,7 @@
 @Contact: dyh_bupt@163.com
 @Time: 2022/3/1 9:18
 @Discription: Gaussian-smoothed interpolation
+For more details about this Gaussian-smoothed interpolation (GSI), please refer to https://arxiv.org/abs/2202.13514
 """
 import os
 import numpy as np
