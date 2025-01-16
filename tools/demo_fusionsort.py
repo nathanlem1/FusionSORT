@@ -39,9 +39,9 @@ def make_parser():
     parser.add_argument('--detector_type', type=str, default="yolo",
                         help='Type of detector to use: set to "yolo" for YOLOv10-x custom detections or '
                              'set to " " for yolox-x detections.')
-    parser.add_argument("--save_result", default=True, action="store_true",
+    parser.add_argument("--save_result", default=False, action="store_true",
                         help="save sequences with tracks of image/video.")
-    parser.add_argument('--display_tracks', default=True, action="store_true", help='Display sequences with tracks.')
+    parser.add_argument('--display_tracks', default=False, action="store_true", help='Display sequences with tracks.')
 
     # Detector
     parser.add_argument("--device", default="gpu", type=str, help="device to run our model, can either be cpu or gpu")
