@@ -137,6 +137,22 @@ python TrackEval/scripts/run_mot_challenge.py --BENCHMARK MOT17 --SPLIT_TO_EVAL 
 Please note the output folder name `FSORT1`.
 
 
+## Demo
+FusionSORT demo based on YOLOX-X detector for three different demo types: webcam, image and video.
+
+```shell
+# Using webcam
+python tools/demo_fusionsort.py --demo_type webcam --camid 0 --with-appearance --fusion-method weighted_sum --experiment-name FSORT1 --fp16 --fuse --display_tracks --save_result
+
+# Using image
+python tools/demo_fusionsort.py --demo_type image --path <path_to_images> --with-appearance --fusion-method weighted_sum --experiment-name FSORT1 --fp16 --fuse --display_tracks --save_result
+
+# Using video
+python tools/demo_fusionsort.py --demo_type video --path <path_to_video> --with-appearance --fusion-method weighted_sum --experiment-name FSORT1 --fp16 --fuse --display_tracks --save_result
+```
+You can use the fusion method you want: minimum, weighted_sum, kf_gating or hadamard.
+
+
 ## Citation
 If you find this work useful, please consider citing our paper:
 ```

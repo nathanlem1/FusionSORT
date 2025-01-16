@@ -45,6 +45,7 @@ def make_parser():
                         help="use the default parameters as in the paper")
     parser.add_argument("--save-frames", dest="save_frames", default=False, action="store_true",
                         help="save sequences with tracks.")
+    parser.add_argument('--display_tracks', default=False, action="store_true", help='Display sequences with tracks.')
 
     # Detector
     parser.add_argument("--device", default="gpu", type=str, help="device to run our model, can either be cpu or gpu")
@@ -112,7 +113,7 @@ def make_parser():
                         help='Value for lambda_c_kf - weight for tracklet confidence (for kf_gating')
 
     parser.add_argument('--second_matching_distance', default='iou', type=str,
-                        help='Matching distance for the second matching: iou or mahalanobis' )
+                        help='Matching distance for the second matching: iou or mahalanobis')
 
     return parser
 
@@ -251,6 +252,14 @@ def image_track(predictor, vis_folder, args):
             save_folder = osp.join(vis_folder, args.name)
             os.makedirs(save_folder, exist_ok=True)
             cv2.imwrite(osp.join(save_folder, osp.basename(img_path)), online_im)
+
+        # Display tracks
+        if args.display_tracks:
+            cv2.imshow('Tracking', online_im)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                cv2.destroyAllWindows()
+                break
 
         if frame_id % 20 == 0:
             logger.info('Processing frame {}/{} ({:.2f} fps)'.format(frame_id, num_frames, 1. / max(1e-5, timer.average_time)))
