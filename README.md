@@ -75,9 +75,9 @@ Note that we use MOT17 test detector model as the validation model for MOT20 dat
 
 
 ## Tracking 
-* **Evaluation on validation set**
+* **Running on validation set**
 
-To evaluate on MOT17 val dataset, you need to run:
+To run the tracker on the MOT17 val dataset, you need to run:
 
 ```shell
 # Using motion only
@@ -94,9 +94,9 @@ that MOT17 and MOT20 validation sets are the second half of the train sets since
 validation sets as the DanceTrack dataset, which has a separate validation set. You can use the fusion method you want: 
 minimum, weighted_sum, kf_gating or hadamard.
 
-* **Evaluation on test set**
+* **Running on test set**
 
-To evaluate on MOT17 test dataset, you need to run:
+To run the tracker on the MOT17 test dataset, you need to run:
 
 ```shell
 # Using motion only
@@ -114,7 +114,7 @@ fusion method you want: minimum, weighted_sum, kf_gating or hadamard.
 
 * **Interpolation**
 
-This is optional. We didn't apply any interpolation for our experimental results reported in the paper.
+This is optional. We did not apply any interpolation for our experimental results reported in the paper.
 
 For using linear interpolation, run the following code:
 ```shell
@@ -127,9 +127,9 @@ You can also use Gaussian-smoothed interpolation (GSI) as in [StrongSORT](https:
 ## Evaluation
 
 You can use the official MOTChallenge evaluation code from [TrackEval](https://github.com/JonathonLuiten/TrackEval) 
-to evaluate the MOT17, MOT20  and DanceTrack `train` or `val` datasets. For our experimental analysis, we use `val`. 
-To evaluate on `val` datasets, you need to use `val` for `--SPLIT_TO_EVAL`. Hence, to evaluate on MOT17, MOT20 or 
-DanceTrack datasets, you can run the following code on terminal:
+to evaluate the tracker's performance on the MOT17, MOT20  and DanceTrack `train` or `val` datasets. For our experimental 
+analysis, we use `val`. To evaluate on `val` datasets, you need to use `val` for `--SPLIT_TO_EVAL`. Hence, to evaluate on 
+MOT17, MOT20 or DanceTrack datasets, you can run the following code on terminal:
 
 ```shell
 python TrackEval/scripts/run_mot_challenge.py --BENCHMARK MOT17 --SPLIT_TO_EVAL val --TRACKERS_TO_EVAL FSORT1 --METRICS HOTA CLEAR Identity VACE --GT_FOLDER results/gt/ --TRACKERS_FOLDER results/trackers/ --USE_PARALLEL False --NUM_PARALLEL_CORES 1
