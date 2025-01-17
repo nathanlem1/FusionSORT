@@ -116,12 +116,15 @@ fusion method you want: minimum, weighted_sum, kf_gating or hadamard.
 
 This is optional. We did not apply any interpolation for our experimental results reported in the paper.
 
-For using linear interpolation, run the following code:
+For using linear interpolation (LI), run the following code:
 ```shell
 python tools/linear_interpolation.py --txt_path <path_to_track_result>
 ```
 
-You can also use Gaussian-smoothed interpolation (GSI) as in [StrongSORT](https://github.com/dyhBUPT/StrongSORT).
+For using Gaussian-smoothed interpolation (GSI), run the following code:
+```shell
+python tools/gaussian_smoothed_interpolation.py --txt_path <path_to_track_result>
+```
 
 
 ## Evaluation
