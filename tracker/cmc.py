@@ -45,13 +45,21 @@ class CMC:
                     filePath = r'tracker/gmc_files/MOT17_ablation'
                 elif self.benchmark == 'MOT20':
                     filePath = r'tracker/gmc_files/MOT20_ablation'
-                else:
+                elif self.benchmark == 'DanceTrack':
                     filePath = r'tracker/gmc_files/DanceTrack'
+                else:
+                    raise ValueError('Use the correct method: file (GMC) method supports only MOT17, MOT20 and '
+                                     'DanceTrack benchmarks. Use the other methods: orb, sift, sparseOptFlow, ecc or '
+                                     'none, for instance for demo')
             else:
                 if self.benchmark == 'DanceTrack':
                     filePath = r'tracker/gmc_files/DanceTrack'
-                else:
+                elif self.benchmark == 'MOT17' or self.benchmark == 'MOT20':
                     filePath = r'tracker/gmc_files/MOTChallenge'
+                else:
+                    raise ValueError('Use the correct method: file (GMC) method supports only MOT17, MOT20 and '
+                                     'DanceTrack benchmarks. Use the other methods: orb, sift, sparseOptFlow, ecc or '
+                                     'none, for instance for demo')
 
             if '-FRCNN' in seqName:
                 seqName = seqName[:-6]
