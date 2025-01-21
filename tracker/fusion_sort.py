@@ -69,7 +69,7 @@ class STrack(BaseTrack):
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0  # Set the derivative of w to zero (width preservation)
                     multi_mean[i][8] = 0  # Set the derivative of h to zero (height preservation)
-                    multi_mean[i][0] = 0  # Set the derivative of c to zero (confidence preservation)
+                    multi_mean[i][9] = 0  # Set the derivative of c to zero (confidence preservation)
             multi_mean, multi_covariance = STrack.shared_kalman.multi_predict(multi_mean, multi_covariance)
             for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
                 stracks[i].mean = mean
@@ -150,12 +150,13 @@ class STrack(BaseTrack):
 
     def re_activate(self, new_track, frame_id, new_id=False):
 
+        new_tlwh = new_track.tlwh
         new_score = new_track.score
 
         self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_track.tlwh, new_score))
+            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score))
         # self.mean, self.covariance = self.kalman_filter.update(
-        #     self.mean, self.covariance, self.tlwh_score_to_xywhs(new_track.tlwh, new_track.score), new_score)  # NSA doesn't help!
+        #     self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score), new_score)  # NSA doesn't help!
 
         # EMA with dynamic or changing alpha
         trust = (new_track.score - self.track_high_thresh) / (1 - self.track_high_thresh)
@@ -394,7 +395,7 @@ class FusionSORT(object):
 
         # Associate with high score detection boxes
         if self.args.fusion_method != 'kf_gating':
-            ious_dists = matching.iou_distance(strack_pool, detections)
+            ious_dists = matching.iou_distance(strack_pool, detections, dist_type="iou")
             ious_dists_mask = (ious_dists > self.iou_thresh)
 
         if self.args.with_hiou:
@@ -496,7 +497,7 @@ class FusionSORT(object):
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]  # lost_tracks (inactive tracks) are not considered in the 2nd association.
         if self.args.second_matching_distance == 'iou':
             # IoU is used for all fusion methods for 2nd association
-            dists = matching.iou_distance(r_tracked_stracks, detections_second)
+            dists = matching.iou_distance(r_tracked_stracks, detections_second, dist_type="iou")
         elif self.args.second_matching_distance == 'mahalanobis':
             dists = matching.mahalanobis_distance(self.kalman_filter, r_tracked_stracks, detections_second)
         else:
@@ -522,7 +523,7 @@ class FusionSORT(object):
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
         detections = [detections[i] for i in u_detection]
         if self.args.fusion_method != 'kf_gating':
-            ious_dists = matching.iou_distance(unconfirmed, detections)
+            ious_dists = matching.iou_distance(unconfirmed, detections, dist_type="iou")
             ious_dists_mask = (ious_dists > self.iou_thresh)
 
         if self.args.with_hiou:
@@ -657,7 +658,7 @@ def sub_stracks(tlista, tlistb):
 
 
 def remove_duplicate_stracks(stracksa, stracksb):
-    pdist = matching.iou_distance(stracksa, stracksb)
+    pdist = matching.iou_distance(stracksa, stracksb, dist_type="iou")
     pairs = np.where(pdist < 0.15)
     dupa, dupb = list(), list()
     for p, q in zip(*pairs):
