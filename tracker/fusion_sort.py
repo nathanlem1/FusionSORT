@@ -148,15 +148,17 @@ class STrack(BaseTrack):
 
         return removed_stracks
 
-    def re_activate(self, new_track, frame_id, new_id=False):
+    def re_activate(self, new_track, frame_id, new_id=False, with_nsa=False):
 
         new_tlwh = new_track.tlwh
         new_score = new_track.score
 
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score))
-        # self.mean, self.covariance = self.kalman_filter.update(
-        #     self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score), new_score)  # NSA doesn't help!
+        if with_nsa:  # NSA doesn't help!
+            self.mean, self.covariance = self.kalman_filter.update(
+                self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score), new_score)
+        else:
+            self.mean, self.covariance = self.kalman_filter.update(
+                self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score))
 
         # EMA with dynamic or changing alpha
         trust = (new_track.score - self.track_high_thresh) / (1 - self.track_high_thresh)
@@ -175,7 +177,7 @@ class STrack(BaseTrack):
 
         self.score = new_track.score
 
-    def update(self, new_track, frame_id):
+    def update(self, new_track, frame_id, with_nsa=False):
         """
         Update a matched track
         :type new_track: STrack
@@ -189,10 +191,12 @@ class STrack(BaseTrack):
         new_tlwh = new_track.tlwh
         new_score = new_track.score
 
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score))
-        # self.mean, self.covariance = self.kalman_filter.update(
-        #     self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score), new_score)  # NSA doesn't help!
+        if with_nsa: # NSA doesn't help!
+            self.mean, self.covariance = self.kalman_filter.update(
+                self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score), new_score)
+        else:
+            self.mean, self.covariance = self.kalman_filter.update(
+                self.mean, self.covariance, self.tlwh_score_to_xywhs(new_tlwh, new_score))
 
         # EMA with dynamic or changing alpha
         trust = (new_track.score - self.track_high_thresh) / (1 - self.track_high_thresh)
@@ -467,10 +471,11 @@ class FusionSORT(object):
             track = strack_pool[itracked]
             det = detections[idet]
             if track.state == TrackState.Tracked:
-                track.update(detections[idet], self.frame_id)   # Apply Kalman filter update
+                track.update(detections[idet], self.frame_id, self.args.with_nsa)   # Apply Kalman filter update
                 activated_starcks.append(track)
             else:
-                track.re_activate(det, self.frame_id, new_id=False)  # Re-activate and apply Kalman filter update
+                # Re-activate and apply Kalman filter update
+                track.re_activate(det, self.frame_id, new_id=False, with_nsa=self.args.with_nsa)
                 refind_stracks.append(track)  # lost tracks matched with detection (within self.max_time_lost)
 
         ''' Step 3: Second association, with low score detection boxes'''
@@ -508,10 +513,10 @@ class FusionSORT(object):
             track = r_tracked_stracks[itracked]
             det = detections_second[idet]
             if track.state == TrackState.Tracked:
-                track.update(det, self.frame_id)   # Apply Kalman filter update
+                track.update(det, self.frame_id, self.args.with_nsa)   # Apply Kalman filter update
                 activated_starcks.append(track)
             else:
-                track.re_activate(det, self.frame_id, new_id=False)
+                track.re_activate(det, self.frame_id, new_id=False, with_nsa=self.args.with_nsa)
                 refind_stracks.append(track)
 
         for it in u_track:
@@ -591,7 +596,8 @@ class FusionSORT(object):
 
         matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
         for itracked, idet in matches:
-            unconfirmed[itracked].update(detections[idet], self.frame_id)  # Apply Kalman filter update
+            # Apply Kalman filter update
+            unconfirmed[itracked].update(detections[idet], self.frame_id, self.args.with_nsa)
             activated_starcks.append(unconfirmed[itracked])
         for it in u_unconfirmed:
             track = unconfirmed[it]

@@ -67,6 +67,8 @@ def make_parser():
     parser.add_argument("--aspect_ratio_thresh", type=float, default=1.6,
                         help="threshold for filtering out boxes of which aspect ratio are above the given value.")
     parser.add_argument('--min_box_area', type=float, default=10, help='filter out tiny boxes')
+    parser.add_argument('--with_nsa', default=False, action='store_true',
+                        help='For using Noise Scale Adaptive (NSA) Kalman Filter (R_nsa = (1-detection score)R')
 
     # CMC
     parser.add_argument("--cmc-method", default="file", type=str,
