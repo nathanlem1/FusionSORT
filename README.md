@@ -13,25 +13,25 @@ research community to use the right fusion method for data association in multi-
 
 ## Installation
 
-**Step 1.** Install torch and matched torchvision from [pytorch.org](https://pytorch.org/get-started/locally/).
-The code was tested using torch 2.2.2+cu118 and torchvision 0.17.2+cu118. 
-
-**Step 2.** Clone FusionSORT and install it. Check if yours is pip or pip3 and python or python3.
+**Step 1.** Git clone this repo and install it. Check if yours is pip or pip3 and python or python3.
 ```shell
 git clone https://github.com/nathanlem1/FusionSORT.git
 cd FusionSORT/
 pip install -r requirements.txt
 python setup.py develop  
 ```
+The code was tested using torch 2.2.2+cu118 and torchvision 0.17.2+cu118. You can install torch and matched torchvision 
+from [pytorch.org](https://pytorch.org/get-started/locally/).
+
 Please check the [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) and
 [FastReID](https://github.com/JDAI-CV/fast-reid) READMEs for any installation issues.
 
-**Step 3.** Install [pycocotools](https://github.com/cocodataset/cocoapi).
+**Step 2.** Install [pycocotools](https://github.com/cocodataset/cocoapi).
 ```shell
 pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 ```
 
-**Step 4.** Others
+**Step 3.** Others
 ```shell
 # Cython-bbox
 pip install cython_bbox
