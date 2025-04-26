@@ -173,10 +173,19 @@ If you find this work useful, please consider citing our paper:
 
 ## Acknowledgement
 
+<!---
 A significant part of the codes and ideas are borrowed from 
 [BoT-SORT](https://github.com/NirAharon/BoT-SORT),
 [ByteTrack](https://github.com/ifzhang/ByteTrack),
 [HybridSORT](https://github.com/ymzis69/HybridSORT),
 [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) and
 [FastReID](https://github.com/JDAI-CV/fast-reid).
-Thanks for their excellent work!
+Thanks for their excellent work!  
+--->
+
+We implemented our tracker based on top of publicly available codes. Hence, we would like to the authors of 
+[BoT-SORT](https://github.com/NirAharon/BoT-SORT),
+[ByteTrack](https://github.com/ifzhang/ByteTrack),
+[HybridSORT](https://github.com/ymzis69/HybridSORT),
+[YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) and
+[FastReID](https://github.com/JDAI-CV/fast-reid) for making their code publicly available.
