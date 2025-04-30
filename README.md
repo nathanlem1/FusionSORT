@@ -183,7 +183,7 @@ A significant part of the codes and ideas are borrowed from
 Thanks for their excellent work!  
 --->
 
-We implemented our tracker based on top of publicly available codes. Hence, we would like to the authors of 
+We implemented our tracker based on top of publicly available codes. Hence, we would like to thank the authors of 
 [BoT-SORT](https://github.com/NirAharon/BoT-SORT),
 [ByteTrack](https://github.com/ifzhang/ByteTrack),
 [HybridSORT](https://github.com/ymzis69/HybridSORT),
