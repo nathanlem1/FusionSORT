@@ -75,7 +75,7 @@ def make_parser():
                         help="cmc method: file | sparseOptFlow | orb | sift | ecc | none")
 
     # Appearance, ReId and weak cues
-    parser.add_argument("--with-appearance", dest="with_appearance", default=False, action="store_true",
+    parser.add_argument("--with-appearance", dest="with_appearance", default=True, action="store_true",
                         help="For using appearance representation features.")
     parser.add_argument("--fast-reid-config", dest="fast_reid_config", default=None, type=str,
                         help="reid config file path")
