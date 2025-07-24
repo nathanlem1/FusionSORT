@@ -36,9 +36,6 @@ def make_parser():
     parser.add_argument("-f", "--exp_file", default=r"yolox/exps/example/mot/yolox_x_mix_det.py", type=str,
                         help="Pls input your experiment description file")
     parser.add_argument("-c", "--ckpt", default=r"pretrained/bytetrack_x_mot17.pth.tar", type=str, help="ckpt for eval")
-    parser.add_argument('--detector_type', type=str, default="yolo",
-                        help='Type of detector to use: set to "yolo" for YOLOv10-x custom detections or '
-                             'set to " " for yolox-x detections.')
     parser.add_argument("--save_result", default=False, action="store_true",
                         help="save sequences with tracks of image/video.")
     parser.add_argument('--display_tracks', default=False, action="store_true", help='Display sequences with tracks.')
