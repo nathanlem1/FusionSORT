@@ -65,6 +65,8 @@ def make_parser():
     parser.add_argument('--min_box_area', type=float, default=10, help='filter out tiny boxes')
     parser.add_argument("--fuse-score", dest="fuse_score", default=False, action="store_true",
                         help="fuse score and iou for association")
+    parser.add_argument('--with_nsa', default=False, action='store_true',
+                        help='For using Noise Scale Adaptive (NSA) Kalman Filter (R_nsa = (1-detection score)R')
 
     # CMC
     parser.add_argument("--cmc-method", default="none", type=str,
