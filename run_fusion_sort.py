@@ -40,7 +40,7 @@ def make_parser():
     parser.add_argument("-c", "--ckpt", default=None, type=str, help="ckpt for eval")
     parser.add_argument("-expn", "--experiment-name", type=str, default='FSORT1',
                         help='The name of the experiment, used for running different experiments and then evaluations, '
-                             'e.g. RSORT1, RSORT2, etc.')
+                             'e.g. FSORT1, FSORT2, etc.')
     parser.add_argument("--default-parameters", dest="default_parameters", default=False, action="store_true",
                         help="use the default parameters as in the paper")
     parser.add_argument("--save-frames", dest="save_frames", default=False, action="store_true",
