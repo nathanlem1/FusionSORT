@@ -159,15 +159,15 @@ You can use the fusion method you want: minimum, weighted_sum, kf_gating or hada
 ## Citation
 If you find this work useful, please consider citing our paper:
 ```
-@misc{baisa2025fusionsortfusionmethodsonline,
-      title={FusionSORT: Fusion Methods for Online Multi-object Visual Tracking}, 
-      author={Nathanael L. Baisa},
-      year={2025},
-      eprint={2501.00843},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2501.00843}, 
-}
+@INPROCEEDINGS{Baisa2025,
+  author={Baisa, Nathanael L.},
+  booktitle={2025 28th International Conference on Information Fusion (FUSION)}, 
+  title={FusionSORT: Fusion Methods for Online Multi-Object Visual Tracking}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={1-8},
+  doi={10.23919/FUSION65864.2025.11123985}}
 ```
 
 
