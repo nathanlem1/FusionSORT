@@ -1,5 +1,5 @@
 # FusionSORT
-This code implements the paper [FusionSORT: Fusion Methods for Online Multi-object Visual Tracking](https://arxiv.org/abs/2501.00843).
+This code implements the paper [FusionSORT: Fusion Methods for Online Multi-object Visual Tracking](https://ieeexplore.ieee.org/document/11123985).
 
 ## Abstract
 In this work, we investigate four different fusion methods for associating detections to tracklets in multi-object 
