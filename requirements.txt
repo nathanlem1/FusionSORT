@@ -24,6 +24,10 @@ pyyaml
 yacs
 termcolor
 gdown
+cython
+psutil
+# Note that YOLOX may require Python 3.10.
+pycocotools>=2.0.2  # pycocotools corresponds to https://github.com/ppwwyyxx/cocoapi
 onnx==1.17.0  # 1.8.1
 onnxruntime==1.18.0  # 1.8.0
 onnx-simplifier==0.3.5   # import onnxsim
