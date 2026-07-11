@@ -25,16 +25,12 @@ The code was tested using torch 2.2.2+cu118 and torchvision 0.17.2+cu118. You ca
 from [pytorch.org](https://pytorch.org/get-started/locally/).
 
 Please check the [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) and
-[FastReID](https://github.com/JDAI-CV/fast-reid) READMEs for any installation issues.
+[FastReID](https://github.com/JDAI-CV/fast-reid) READMEs for any installation issues. Note that YOLOX may require Python 3.10.
 
-**Step 2.** Install [pycocotools](https://github.com/cocodataset/cocoapi).
-```shell
-pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
-```
 
-**Step 3.** Others
+**Step 2.** Others
 ```shell
-# Cython-bbox
+# Cython-bbox; this is only required if you want to use it in tracker/matching.py. Hence, this is optional.
 pip install cython_bbox
 
 # faiss cpu / gpu
