@@ -6,7 +6,13 @@ from scipy.spatial.distance import cdist
 
 import torch
 
-from cython_bbox import bbox_overlaps as bbox_ious
+try:
+    from cython_bbox import bbox_overlaps as bbox_ious  # To use this install using: pip install cython-bbox
+    is_cython_bbox = True
+except:
+    is_cython_bbox = False
+    print("[Warning] cython_bbox not installed. Install with: pip install cython-bbox")
+
 from tracker import kalman_filter_score
 
 
@@ -378,8 +384,10 @@ def iou_distance(atracks, btracks, dist_type="iou"):
     elif dist_type == "ciou":
         _ious = bbox_overlaps_ciou(atlbrs, btlbrs)
     elif dist_type == "iou":
-        _ious = ious(atlbrs, btlbrs)  # iou similarity, using cython_bbox gives better result than using iou_batch.
-        # _ious = iou_batch(atlbrs, btlbrs)
+        if is_cython_bbox:
+            _ious = ious(atlbrs, btlbrs)  # iou similarity, using cython_bbox gives a better result than using iou_batch.
+        else:
+            _ious = iou_batch(atlbrs, btlbrs)
     else:
         raise ValueError('Set to correct IoU distance type: giou, diou, ciou or iou.')
 
